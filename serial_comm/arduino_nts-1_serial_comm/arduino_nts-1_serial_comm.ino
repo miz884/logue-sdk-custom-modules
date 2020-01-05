@@ -57,12 +57,13 @@ String decode(String s, int p) {
 
 void print_result(String s) {
   String result_s = decode(s, 0);
-  uint32_t result_i = 0;
+  uint32_t result_ui = 0;
   for (int i = 0; i < result_s.length(); ++i) {
-    result_i <<= 1;
-    if (result_s.charAt(i) == '1') result_i |= 1;
+    result_ui <<= 1;
+    if (result_s.charAt(i) == '1') result_ui |= 1;
   }
-  float result_f = param_val_to_f32(result_i);
+  int32_t result_i = (int32_t) result_ui;
+  float result_f = param_val_to_f32(result_ui);
   Serial.print(result_s.substring( 0, 8));
   Serial.print(" ");
   Serial.print(result_s.substring(8, 16));
@@ -70,6 +71,8 @@ void print_result(String s) {
   Serial.print(result_s.substring(16, 24));
   Serial.print(" ");
   Serial.print(result_s.substring(24));
+  Serial.print("\t");
+  Serial.print(result_ui);
   Serial.print("\t");
   Serial.print(result_i);
   Serial.print("\t");
