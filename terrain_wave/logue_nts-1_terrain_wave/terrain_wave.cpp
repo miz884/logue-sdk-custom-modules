@@ -3,39 +3,62 @@
 typedef struct State {
   float phase;
   uint8_t flags;
+  uint8_t wavetable_index;
+  uint32_t step_count;
+  uint8_t eg_enabled;
+  float eg_scale;
 } State;
 
 static State state;
 
-extern const uint16_t wavetable_len;
-extern const float wavetable[];
+extern float wavetable0[];
+extern float wavetable1[];
+extern uint16_t wavetable0_len;
+extern uint16_t wavetable1_len;
+
+uint16_t wavetable_len[2];
+float* wavetables[2];
 
 enum {
   flags_clear = 0,
-  flag_reset = 1 << 0,
+  flag_noteon = 1 << 0,
+  flag_noteoff = 1 << 1,
 };
 
 void OSC_INIT(uint32_t platform, uint32_t api) {
   state.phase = 0.f;
   state.flags = flags_clear;
+  state.wavetable_index = 0;
+  state.step_count = 0;
+  state.eg_enabled = 0;
+  state.eg_scale = 1.0;
+
+  wavetables[0] = wavetable0;
+  wavetable_len[0] = wavetable0_len;
+  wavetables[1] = wavetable1;
+  wavetable_len[1] = wavetable1_len;
 }
 
 float get_signal_from_wavetable(const float phase, const float w_delta) {
-  const uint16_t index = (uint16_t) ((float) wavetable_len * phase);
-  return wavetable[index];
+  const uint16_t index = (uint16_t) ((float) wavetable_len[state.wavetable_index] * (phase - (uint16_t) phase));
+  return wavetables[state.wavetable_index][index];
 }
 
 void OSC_CYCLE(const user_osc_param_t* params,
                int32_t* yn,
                const uint32_t frames) {  
   // Handle the reset flag on NOTEON.
-  if (state.flags & flag_reset) {
+  if (state.flags & flag_noteon) {
     state.flags = flags_clear;
     state.phase = 0.f;
+    state.step_count = 0;
   }
 
   // Restore the last state.
   float phase = state.phase;
+  uint32_t steps = state.step_count;
+  uint8_t eg_enabled = state.eg_enabled;
+  float eg_scale = state.eg_scale;
 
   // Calculate the current phase.
   const float w_delta = osc_w0f_for_note((params->pitch)>>8, params->pitch & 0xFF);
@@ -47,31 +70,40 @@ void OSC_CYCLE(const user_osc_param_t* params,
   for (; y != y_e; ) {
 
     // Main signal
-    const float sig  = osc_softclipf(0.05f, get_signal_from_wavetable(phase, w_delta));
+    const float drive = (get_signal_from_wavetable(((float) steps / k_samplerate * eg_scale), w_delta) + 1.0) / 2.0;
+    const float sig  = osc_softclipf(0.05f, (eg_enabled == 1 ? drive : 1.0) * get_signal_from_wavetable(phase, w_delta));
     *(y++) = f32_to_q31(sig);
 
     // Next step.
     phase += w_delta;
     phase -= (uint32_t) phase; // to keep phase within 0.0-1.0.
+    if (steps < k_samplerate / eg_scale) ++steps;
   }
 
   // Store the state.
   state.phase = phase;
+  state.step_count = steps;
 }
 
 void OSC_NOTEON(const user_osc_param_t * const params) {
-  state.flags |= flag_reset;
+  state.flags |= flag_noteon;
 }
 
 void OSC_NOTEOFF(const user_osc_param_t * const params) {
-  (void)params;
+  state.flags |= flag_noteoff;
 }
 
 void OSC_PARAM(uint16_t index, uint16_t value) {
   switch (index) {
   case k_user_osc_param_id1:
+    state.wavetable_index = value;
+    break;
   case k_user_osc_param_id2:
+    state.eg_enabled = value;
+    break;
   case k_user_osc_param_id3:
+    state.eg_scale = (float) value;
+    break;
   case k_user_osc_param_id4:
   case k_user_osc_param_id5:
   case k_user_osc_param_id6:
@@ -83,7 +115,7 @@ void OSC_PARAM(uint16_t index, uint16_t value) {
 }
 
 // Mt. Fuji.
-const float wavetable[] = {
+float wavetable0[] = {
   -0.9950347, -0.9954216, -0.9958085, -0.9960664, -0.9963244, -0.9965823, -0.9968402, -0.9970337, -0.9972916, -0.9974851,
   -0.9977430, -0.9980010, -0.9983234, -0.9985813, -0.9987103, -0.9977430, -0.9965178, -0.9952281, -0.9940029, -0.9932936,
   -0.9932936, -0.9932936, -0.9932936, -0.9932936, -0.9934225, -0.9934870, -0.9935515, -0.9938094, -0.9939384, -0.9941964,
@@ -386,10 +418,10 @@ const float wavetable[] = {
   -0.9713687, -0.9732388, -0.9751088, -0.9767854, -0.9784620, -0.9802031, -0.9820732, -0.9840077, -0.9852974, -0.9864582,
   -0.9874899, -0.9883927, -0.9892955, -0.9900048, -0.9907142, -0.9914880, -0.9924553, -0.9932291, -0.9939384, -0.9948412,
 };
+uint16_t wavetable0_len = sizeof(wavetable0) / sizeof(wavetable0[0]);
 
 // Mt. Gassan.
-/*
-const float wavetable[] = {
+float wavetable1[] = {
   -0.99980, -0.99406, -0.98956, -0.98628, -0.98198, -0.97441, -0.96458, -0.95577, -0.94574, -0.93714,
   -0.92690, -0.91871, -0.91011, -0.90254, -0.90070, -0.89803, -0.89476, -0.89169, -0.88739, -0.88329,
   -0.87654, -0.86876, -0.86118, -0.84623, -0.83456, -0.82391, -0.81532, -0.80815, -0.80139, -0.79545,
@@ -477,7 +509,5 @@ const float wavetable[] = {
   -0.90971, -0.91339, -0.91708, -0.92158, -0.92383, -0.92895, -0.93550, -0.94615, -0.95639, -0.96785,
   -0.98137, -0.99345,
 };
-*/
-
-const uint16_t wavetable_len = sizeof(wavetable) / sizeof(wavetable[0]);
+uint16_t wavetable1_len = sizeof(wavetable1) / sizeof(wavetable1[0]);
 
