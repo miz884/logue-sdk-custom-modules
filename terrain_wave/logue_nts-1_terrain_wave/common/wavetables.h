@@ -10,3 +10,5 @@ extern float* wavetables[2];
 
 extern void init_wavetables();
 
+extern float get_wave_value(const uint16_t w_index, const float phase);
+

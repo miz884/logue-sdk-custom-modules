@@ -1,5 +1,5 @@
 #include "userosc.h"
-#include "wavetables.h"
+#include "../common/wavetables.h"
 
 typedef struct State {
   float phase;
@@ -29,11 +29,6 @@ void OSC_INIT(uint32_t platform, uint32_t api) {
   init_wavetables();
 }
 
-float get_signal_from_wavetable(const float phase, const float w_delta) {
-  const uint16_t index = (uint16_t) ((float) wavetable_len[state.wavetable_index] * (phase - (uint16_t) phase));
-  return wavetables[state.wavetable_index][index];
-}
-
 void OSC_CYCLE(const user_osc_param_t* params,
                int32_t* yn,
                const uint32_t frames) {  
@@ -60,8 +55,8 @@ void OSC_CYCLE(const user_osc_param_t* params,
   for (; y != y_e; ) {
 
     // Main signal
-    const float drive = (get_signal_from_wavetable(((float) steps / k_samplerate * eg_scale), w_delta) + 1.0) / 2.0;
-    const float sig  = osc_softclipf(0.05f, (eg_enabled == 1 ? drive : 1.0) * get_signal_from_wavetable(phase, w_delta));
+    const float drive = (get_wave_value(state.wavetable_index, (float) steps / k_samplerate * eg_scale) + 1.0) / 2.0;
+    const float sig  = osc_softclipf(0.05f, (eg_enabled == 1 ? drive : 1.0) * get_wave_value(state.wavetable_index, phase));
     *(y++) = f32_to_q31(sig);
 
     // Next step.

@@ -10,6 +10,12 @@ void init_wavetables() {
   wavetable_len[1] = wavetable1_len;
 }
 
+float get_wave_value(const uint16_t w_index, const float phase) {
+  const float p = phase - (uint16_t) phase;
+  const uint16_t index = (uint16_t) ((float) wavetable_len[w_index] * p);
+  return wavetables[w_index][index]; 
+}
+
 // Mt. Fuji.
 float wavetable0[] = {
   -0.9950347, -0.9954216, -0.9958085, -0.9960664, -0.9963244, -0.9965823, -0.9968402, -0.9970337, -0.9972916, -0.9974851,

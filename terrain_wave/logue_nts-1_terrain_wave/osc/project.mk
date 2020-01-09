@@ -2,7 +2,7 @@
 # Project Customization
 # #############################################################################
 
-LOGUE_SDK_ROOT = ../../../logue-sdk
+LOGUE_SDK_ROOT = ../../../../logue-sdk
 
 PLATFORM_TYPE = nutekt-digital
 
@@ -12,7 +12,7 @@ PROJECT = terrain_wave
 
 UCSRC = 
 
-UCXXSRC = terrain_wave.cpp wavetables.cpp
+UCXXSRC = terrain_wave.cpp ../common/wavetables.cpp
 
 UINCDIR = 
 
@@ -20,4 +20,4 @@ UDEFS =
 
 ULIB = 
 
-ULIBDIR =
+ULIBDIR = 
