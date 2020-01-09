@@ -1,4 +1,4 @@
-#include "userosc.h"
+#include <stdint.h>
 
 extern float wavetable0[];
 extern float wavetable1[];
