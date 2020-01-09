@@ -17,18 +17,11 @@ static State s_state;
 // 48000 (frames per second) / 80 (frames per clock) = 600 clocks per second.
 #define FRAMES_PER_CLOCK (80)
 
-#define CLOCKS_PER_MSG (80)
-#define BIT_PER_MSG (40)
+#define CLOCKS_PER_MSG (72)
 #define MSG_LEN (32)
 
 const float stop_signals[] = {
-  HIGH, LOW,
-  HIGH, HIGH, HIGH, HIGH,
-  LOW, HIGH,
-  LOW, HIGH,
-  LOW, HIGH,
-  LOW, HIGH,
-  LOW, HIGH,
+  HIGH, LOW, HIGH, HIGH, HIGH, LOW, HIGH, LOW,
 };
 
 uint32_t get_next_message() {
@@ -57,13 +50,13 @@ void OSC_CYCLE(const user_osc_param_t *params,
   uint32_t msg = s_state.msg;
  
   for (; y != y_e; ) {
-    // Send the stop signal in last 16 clocks.
-    if (clock >= 64) {
-      *(y++) = f32_to_q31(stop_signals[clock - 64]);
-    } else {
-      // Otherwise, send the msg.
+    if (clock < 64) {
+      // Send the msg.
       int bit = ((msg & (1 << msg_bit_pos)) > 0) ? 1 : 0;
       *(y++) = f32_to_q31(((clock % 2) == bit) ? HIGH : LOW);
+    } else {
+      // Send the stop signal in last 16 clocks.
+      *(y++) = f32_to_q31(stop_signals[clock - 64]);
     }
 
     // Next frame.

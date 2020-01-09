@@ -10,7 +10,7 @@
 
 #define SINGLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 1.f * ACCEPTABLE_ERROR)
 #define DOUBLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 2.f * ACCEPTABLE_ERROR)
-#define STOP_SIGNAL_MICROS (MICROS_PER_CLOCK * 4.f * ACCEPTABLE_ERROR)
+#define STOP_SIGNAL_MICROS (MICROS_PER_CLOCK * 3.f * ACCEPTABLE_ERROR)
 
 typedef struct State {
   int8_t prev_sig = 0;
@@ -101,10 +101,12 @@ void loop() {
     const unsigned long elapsed = now - state.prev_clock_micros;
     // If it spans STOP_SIGNAL_MICROS, it is the end of message.
     if (elapsed > STOP_SIGNAL_MICROS) {
-      // Skip until the next message (10 clocks to skip).
-      state.skip_until = now + (MICROS_PER_CLOCK * 10);
+      // Skip until the next message (3 clocks to skip).
+      state.skip_until = now + (MICROS_PER_CLOCK * 3);
       // Remove the unused frames at the end of message.
-      state.result_str.remove(state.result_str.length() - 2, 2);
+      if (state.result_str.length() > 2) {
+        state.result_str.remove(state.result_str.length() - 2, 2);
+      }
       // Print the result.
       print_result(state.result_str);
       state.result_str = "";
