@@ -1,16 +1,20 @@
-#define param_val_to_f32(val) ((uint16_t)val * 9.77517106549365e-004f)  
+#define param_val_to_f32(val) ((uint16_t) val * 9.77517106549365e-004f)  
 
-#define SIGNAL_LEVEL_THRESHOLD 50
+#define SIGNAL_LEVEL_THRESHOLD (50)
 
-#define SINGLE_CLOCK_LEN 90
-#define DOUBLE_CLOCK_LEN 180
-#define STOP_CLOCK_LEN 360
+#define FRAMES_PER_CLOCK (80.f)
+
+#define MICROS_PER_FRAME (1.f / 48000.f * 1000.f * 1000.f)
+#define MICROS_PER_CLOCK (MICROS_PER_FRAME * FRAMES_PER_CLOCK)
+#define ACCEPTABLE_ERROR (0.90f)
+
+#define SINGLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 1.f * ACCEPTABLE_ERROR)
+#define DOUBLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 2.f * ACCEPTABLE_ERROR)
+#define STOP_SIGNAL_MICROS (MICROS_PER_CLOCK * 3.f * ACCEPTABLE_ERROR)
 
 typedef struct State {
-  uint16_t run_length = 0;
-  int8_t   prev_sig = 0;
-  uint8_t  sig_clock = 0;
-
+  int8_t prev_sig = 0;
+  unsigned long prev_clock_micros = 0;
   unsigned long skip_until = 0;
 
   String result_str = "";
@@ -21,28 +25,23 @@ void setup() {
   Serial.begin(9600);
   analogReference(INTERNAL);
   
-  state.run_length = 0;
   state.prev_sig = 0;
-  state.sig_clock = 0;
-
+  state.prev_clock_micros = 0;
   state.skip_until = 0;
-
   state.result_str = "";
 }
 
-void put_signal(int8_t sig, uint16_t len) {
-  if (len > DOUBLE_CLOCK_LEN) state.result_str.concat(sig);
-  if (len > SINGLE_CLOCK_LEN)  state.result_str.concat(sig);
-}
-
-String decode(String s, int p) {
+/*
+ * Decode a Manchester code.
+ */
+String decode(String s, int offset) {
   String output = "";
-  for (int i = p; i < s.length(); i += 2) {
+  for (int i = offset; i < s.length(); i += 2) {
     char c0 = s.charAt(i);
     char c1 = s.charAt(i + 1);
     // Same signal can't appear in 2 frames in a row.
     if (c0 == c1) {
-      if (p == 0) {
+      if (offset == 0) {
         // Try to shift a frame.
         return decode(s, 1);
       } else {
@@ -57,13 +56,6 @@ String decode(String s, int p) {
 
 void print_result(String s) {
   String result_s = decode(s, 0);
-  uint32_t result_ui = 0;
-  for (int i = 0; i < result_s.length(); ++i) {
-    result_ui <<= 1;
-    if (result_s.charAt(i) == '1') result_ui |= 1;
-  }
-  int32_t result_i = (int32_t) result_ui;
-  float result_f = param_val_to_f32(result_ui);
   Serial.print(result_s.substring( 0, 8));
   Serial.print(" ");
   Serial.print(result_s.substring(8, 16));
@@ -71,44 +63,59 @@ void print_result(String s) {
   Serial.print(result_s.substring(16, 24));
   Serial.print(" ");
   Serial.print(result_s.substring(24));
+  // Convert it into uint32.
+  uint32_t result_ui = 0;
+  for (int i = 0; i < result_s.length(); ++i) {
+    result_ui <<= 1;
+    if (result_s.charAt(i) == '1') result_ui |= 1;
+  }
   Serial.print("\t");
   Serial.print(result_ui);
+  // Convert it into signed int.
+  int32_t result_i = (int16_t) result_ui;
   Serial.print("\t");
   Serial.print(result_i);
+  // Convert it into a floating point value.
+  float result_f = param_val_to_f32(result_i);
   Serial.print("\t");
   Serial.print(result_f);
+  // End of line.
   Serial.println();
 }
 
 void loop() {
-  // Skip until the next message frames.
-  if (state.skip_until > 0 && micros() < state.skip_until) return;
-  state.skip_until = 0;
+  unsigned long now = micros();
+  // Skip until the next message.
+  if (state.skip_until > 0 && now < state.skip_until) return;
+
+  if (state.skip_until > 0) {
+    state.skip_until = 0;
+    state.prev_clock_micros = now;
+  }
 
   // Read and check the signal.
-  int a5 = analogRead(5);
-  int8_t sig = -1;
-  if (a5 < SIGNAL_LEVEL_THRESHOLD) sig = 0;
-  else if (SIGNAL_LEVEL_THRESHOLD <= a5) sig = 1;
+  const int a5 = analogRead(5);
+  const int8_t sig = (a5 < SIGNAL_LEVEL_THRESHOLD) ? 0 : 1;
 
-  if (state.prev_sig == sig) {
-    ++state.run_length;
-  } else {
-    // If it spans STOP_CLOCK_LEN, it is the end of message.
-    if (state.run_length > STOP_CLOCK_LEN) {
-      // Skip until the next message frame.
-      // There are 80 clocks in a second. There are 10 clocks to skip.
-      state.skip_until = micros() + (1000L * 1000L / 80 * 10);
+  if (state.prev_sig != sig) {
+    const unsigned long elapsed = now - state.prev_clock_micros;
+    // If it spans STOP_SIGNAL_MICROS, it is the end of message.
+    if (elapsed > STOP_SIGNAL_MICROS) {
+      // Skip until the next message (3 clocks to skip).
+      state.skip_until = now + (MICROS_PER_CLOCK * 3);
       // Remove the unused frames at the end of message.
-      state.result_str.remove(state.result_str.length() - 2, 2);
+      if (state.result_str.length() > 2) {
+        state.result_str.remove(state.result_str.length() - 2, 2);
+      }
       // Print the result.
       print_result(state.result_str);
       state.result_str = "";
     } else {
       // Otherwise, it is a message frame.
-      put_signal(state.prev_sig, state.run_length);
+      if (elapsed > SINGLE_CLOCKS_MICROS) state.result_str.concat(state.prev_sig);
+      if (elapsed > DOUBLE_CLOCKS_MICROS) state.result_str.concat(state.prev_sig);
     }
     state.prev_sig = sig;
-    state.run_length = 0;
+    state.prev_clock_micros = now;
   }
 }
