@@ -16,7 +16,7 @@ UCXXSRC = terrain_modfx.cpp ../common/wavetables.cpp
 
 UINCDIR =
 
-UDEFS =
+UDEFS = -DSIMPLE_WAVETABLES
 
 ULIB = 
 

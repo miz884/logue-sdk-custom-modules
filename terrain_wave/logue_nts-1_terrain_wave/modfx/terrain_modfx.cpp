@@ -1,7 +1,6 @@
 #include "usermodfx.h"
 #include "../common/wavetables.h"
 
-
 #ifndef k_samplerate
 #define k_samplerate        (48000)
 #endif
