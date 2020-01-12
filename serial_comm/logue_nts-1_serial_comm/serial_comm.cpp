@@ -14,13 +14,13 @@ static State s_state;
 #define ZERO 0.f
 #define LOW -0.99f
 
-// 48000 (frames per second) / 40 (frames per clock) = 1,200 clocks per second.
-#define FRAMES_PER_CLOCK (40)
+// 48000 (frames per second) / 30 (frames per clock) = 1,600 clocks per second.
+#define FRAMES_PER_CLOCK (30)
 
 #define MSG_LEN (32)
 
 const float stop_signals[] = {
-  HIGH, LOW, HIGH, HIGH, HIGH, LOW, HIGH
+  HIGH, HIGH, HIGH, LOW, HIGH
 };
 
 const uint16_t stop_signals_len = sizeof(stop_signals) / sizeof(stop_signals[0]);

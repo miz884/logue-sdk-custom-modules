@@ -2,23 +2,23 @@
 
 #define SIGNAL_LEVEL_THRESHOLD (50)
 
-#define FRAMES_PER_CLOCK (40.f)
+#define FRAMES_PER_CLOCK (30.f)
 
 #define MICROS_PER_FRAME (1.f / 48000.f * 1000.f * 1000.f)
 #define MICROS_PER_CLOCK (MICROS_PER_FRAME * FRAMES_PER_CLOCK)
-#define CLOCK_TO_SKIP (2)
+#define STOP_SIGNAL_CLOCKS (3)
+#define CLOCKS_TO_SKIP (2)
 
 #define ACCEPTABLE_ERROR (0.90f)
 #define SINGLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 1.f * ACCEPTABLE_ERROR)
 #define DOUBLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 2.f * ACCEPTABLE_ERROR)
-#define STOP_SIGNAL_MICROS (MICROS_PER_CLOCK * 3.f * ACCEPTABLE_ERROR)
+#define STOP_SIGNAL_MICROS (MICROS_PER_CLOCK * (float) STOP_SIGNAL_CLOCKS * ACCEPTABLE_ERROR)
 
 typedef struct State {
   uint16_t prev_sig = 0;
   unsigned long prev_clock_micros = 0;
   unsigned long skip_until = 0;
 
-  // Bit buffer.
   uint32_t result[3] = {0, 0, 0};
   uint16_t result_current_pos = 0;
 } State;
@@ -100,9 +100,9 @@ void print_result() {
 void loop() {
   const unsigned long now = micros();
   // Skip until the next message.
-  if (state.skip_until > 0 && now < state.skip_until) return;
-
-  if (state.skip_until > 0) {
+  if (0 < state.skip_until) {
+    if (now < state.skip_until) return;
+    // Reset the skip timer.
     state.skip_until = 0;
     state.prev_clock_micros = now;
   }
@@ -112,15 +112,14 @@ void loop() {
   const uint16_t sig = (a5 < SIGNAL_LEVEL_THRESHOLD) ? 0 : 1;
 
   if (state.prev_sig != sig) {
-    const unsigned long elapsed = now - state.prev_clock_micros;
+    unsigned long elapsed = now - state.prev_clock_micros;
     // If it spans STOP_SIGNAL_MICROS, it is the end of message.
     if (elapsed > STOP_SIGNAL_MICROS) {
-      // Skip until the next message (3 clocks to skip).
-      state.skip_until = now + (MICROS_PER_CLOCK * CLOCK_TO_SKIP);
-      // Remove the unused frames at the end of message.
-      if (state.result_current_pos > 2) {
-        state.result_current_pos -= 2;
-      }
+      // Skip until the next message.
+      state.skip_until = now + (MICROS_PER_CLOCK * CLOCKS_TO_SKIP);
+      // Remove the stop signals.
+      elapsed -= MICROS_PER_CLOCK * STOP_SIGNAL_CLOCKS;
+      if (elapsed > SINGLE_CLOCKS_MICROS) result_push(state.prev_sig);
       // Print the result.
       print_result();
       result_reset();
