@@ -6,13 +6,13 @@
 
 #define MICROS_PER_FRAME (1.f / 48000.f * 1000.f * 1000.f)
 #define MICROS_PER_CLOCK (MICROS_PER_FRAME * FRAMES_PER_CLOCK)
-#define STOP_SIGNAL_CLOCKS (3)
+#define SYNC_SIGNAL_CLOCKS (3)
 #define CLOCKS_TO_SKIP (2)
 
 #define ACCEPTABLE_ERROR (0.90f)
 #define SINGLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 1.f * ACCEPTABLE_ERROR)
 #define DOUBLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 2.f * ACCEPTABLE_ERROR)
-#define STOP_SIGNAL_MICROS (MICROS_PER_CLOCK * (float) STOP_SIGNAL_CLOCKS * ACCEPTABLE_ERROR)
+#define SYNC_SIGNAL_MICROS (MICROS_PER_CLOCK * (float) SYNC_SIGNAL_CLOCKS * ACCEPTABLE_ERROR)
 
 typedef struct State {
   uint16_t prev_sig = 0;
@@ -113,12 +113,12 @@ void loop() {
 
   if (state.prev_sig != sig) {
     unsigned long elapsed = now - state.prev_clock_micros;
-    // If it spans STOP_SIGNAL_MICROS, it is the end of message.
-    if (elapsed > STOP_SIGNAL_MICROS) {
+    // If it spans SYNC_SIGNAL_MICROS, it is a sync message.
+    if (elapsed > SYNC_SIGNAL_MICROS) {
       // Skip until the next message.
       state.skip_until = now + (MICROS_PER_CLOCK * CLOCKS_TO_SKIP);
-      // Remove the stop signals.
-      elapsed -= MICROS_PER_CLOCK * STOP_SIGNAL_CLOCKS;
+      // Remove the sync signals.
+      elapsed -= MICROS_PER_CLOCK * SYNC_SIGNAL_CLOCKS;
       if (elapsed > SINGLE_CLOCKS_MICROS) result_push(state.prev_sig);
       // Print the result.
       print_result();
