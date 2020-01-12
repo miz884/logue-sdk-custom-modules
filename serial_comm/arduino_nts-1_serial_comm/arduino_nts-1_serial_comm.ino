@@ -2,7 +2,7 @@
 
 #define SIGNAL_LEVEL_THRESHOLD (50)
 
-#define FRAMES_PER_CLOCK (30.f)
+#define FRAMES_PER_CLOCK (40.f)
 
 #define MICROS_PER_FRAME (1.f / 48000.f * 1000.f * 1000.f)
 #define MICROS_PER_CLOCK (MICROS_PER_FRAME * FRAMES_PER_CLOCK)
@@ -82,9 +82,11 @@ uint32_t decode(const int offset) {
 
 void print_result() {
   const uint32_t result_ui = decode(0);
-  Serial.print(result_ui, BIN);
+  // Serial.print(result_ui, BIN);
+  // Serial.print("\t");
+  Serial.print(result_ui, DEC);
   Serial.print("\t");
-  Serial.print(result_ui);
+  Serial.print(result_ui, HEX);
   // Convert it into signed int.
   const int32_t result_i = (int16_t) result_ui;
   Serial.print("\t");

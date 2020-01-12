@@ -1,21 +1,12 @@
+#include "osc_api.h"
 #include "userosc.h"
-
-typedef struct State {
-  uint16_t frames;
-  uint16_t clock;
-  uint16_t value;
-  uint16_t msg_bit_pos;
-  uint32_t msg;
-} State;
-
-static State s_state;
 
 #define HIGH 0.99f
 #define ZERO 0.f
 #define LOW -0.99f
 
 // 48000 (frames per second) / 30 (frames per clock) = 1,600 clocks per second.
-#define FRAMES_PER_CLOCK (30)
+#define FRAMES_PER_CLOCK (40)
 
 #define MSG_LEN (32)
 
@@ -25,16 +16,50 @@ const float sync_signals[] = {
 
 const uint16_t sync_signals_len = sizeof(sync_signals) / sizeof(sync_signals[0]);
 
+typedef struct State {
+  uint16_t frames;
+  uint16_t clock;
+  uint16_t msg_bit_pos;
+  uint32_t msg;
+
+  uint16_t value;
+
+  const float * const * p;
+  uint32_t count;
+  uint32_t w_index;
+  uint32_t v_index;
+} State;
+
+static State s_state;
+
+void init_message() {
+  s_state.p = wavesF;
+  s_state.value = 0;
+  s_state.count = 0;
+  s_state.w_index = 0;
+  s_state.v_index = 0;
+}
+
 uint32_t get_next_message() {
-  return s_state.value;
+  ++s_state.count;
+  if (s_state.count < 10) return 0UL;
+  if (s_state.w_index >= (sizeof(s_state.p) / sizeof(s_state.p[0]))) return 0UL;
+  uint32_t result = (uint32_t) ((s_state.p[s_state.w_index][s_state.v_index++] + 1.f) * 10000.f);
+  if (s_state.v_index >= k_waves_size) {
+    s_state.count =0;
+    s_state.v_index = 0;
+    s_state.w_index++;
+  }
+  return result;
 }
 
 void OSC_INIT(uint32_t platform, uint32_t api) {
   s_state.frames = 0;
   s_state.clock = 0;
-  s_state.value = 0;
   s_state.msg_bit_pos = 0;
   s_state.msg = 0;
+
+  init_message();
 }
 
 void OSC_CYCLE(const user_osc_param_t *params,
@@ -86,7 +111,7 @@ void OSC_CYCLE(const user_osc_param_t *params,
 }
 
 void OSC_NOTEON(const user_osc_param_t * const params) {
-  (void) params;
+  init_message();
 }
 
 void OSC_NOTEOFF(const user_osc_param_t * const params) {
