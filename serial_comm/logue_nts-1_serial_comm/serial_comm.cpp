@@ -14,15 +14,16 @@ static State s_state;
 #define ZERO 0.f
 #define LOW -0.99f
 
-// 48000 (frames per second) / 80 (frames per clock) = 600 clocks per second.
-#define FRAMES_PER_CLOCK (80)
+// 48000 (frames per second) / 40 (frames per clock) = 1,200 clocks per second.
+#define FRAMES_PER_CLOCK (40)
 
-#define CLOCKS_PER_MSG (72)
 #define MSG_LEN (32)
 
 const float stop_signals[] = {
-  HIGH, LOW, HIGH, HIGH, HIGH, LOW, HIGH, LOW,
+  HIGH, LOW, HIGH, HIGH, HIGH, LOW, HIGH
 };
+
+const uint16_t stop_signals_len = sizeof(stop_signals) / sizeof(stop_signals[0]);
 
 uint32_t get_next_message() {
   return s_state.value;
@@ -50,13 +51,13 @@ void OSC_CYCLE(const user_osc_param_t *params,
   uint32_t msg = s_state.msg;
  
   for (; y != y_e; ) {
-    if (clock < 64) {
+    if (clock < MSG_LEN * 2) {
       // Send the msg.
       int bit = ((msg & (1 << msg_bit_pos)) > 0) ? 1 : 0;
       *(y++) = f32_to_q31(((clock % 2) == bit) ? HIGH : LOW);
     } else {
       // Send the stop signal in last 16 clocks.
-      *(y++) = f32_to_q31(stop_signals[clock - 64]);
+      *(y++) = f32_to_q31(stop_signals[clock - MSG_LEN * 2]);
     }
 
     // Next frame.
@@ -68,7 +69,7 @@ void OSC_CYCLE(const user_osc_param_t *params,
       if (clock % 2 == 0 && msg_bit_pos > 0) {
         --msg_bit_pos;
       }
-      if (clock % CLOCKS_PER_MSG == 0) {
+      if (clock % (MSG_LEN * 2 + stop_signals_len) == 0) {
         // Next message.
         clock = 0;
         msg_bit_pos = MSG_LEN - 1;
