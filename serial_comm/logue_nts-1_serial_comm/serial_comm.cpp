@@ -3,9 +3,12 @@
 typedef struct State {
   uint16_t frames;
   uint16_t clock;
-  uint16_t value;
   uint16_t msg_bit_pos;
   uint32_t msg;
+
+  uint16_t count;
+  uint16_t min;
+  uint16_t max;
 } State;
 
 static State s_state;
@@ -15,7 +18,7 @@ static State s_state;
 #define LOW -0.99f
 
 // 48000 (frames per second) / 30 (frames per clock) = 1,600 clocks per second.
-#define FRAMES_PER_CLOCK (30)
+#define FRAMES_PER_CLOCK (40)
 
 #define MSG_LEN (32)
 
@@ -26,15 +29,23 @@ const float sync_signals[] = {
 const uint16_t sync_signals_len = sizeof(sync_signals) / sizeof(sync_signals[0]);
 
 uint32_t get_next_message() {
-  return s_state.value;
+  ++s_state.count;
+  if (s_state.count % 2 == 0) {
+    return s_state.max;
+  } else {
+    return s_state.min;
+  }
 }
 
 void OSC_INIT(uint32_t platform, uint32_t api) {
   s_state.frames = 0;
   s_state.clock = 0;
-  s_state.value = 0;
   s_state.msg_bit_pos = 0;
   s_state.msg = 0;
+
+  s_state.count = 0;
+  s_state.min = 0xFFFF;
+  s_state.max = 0;
 }
 
 void OSC_CYCLE(const user_osc_param_t *params,
@@ -49,6 +60,9 @@ void OSC_CYCLE(const user_osc_param_t *params,
   uint16_t clock = s_state.clock;
   uint16_t msg_bit_pos = s_state.msg_bit_pos;
   uint32_t msg = s_state.msg;
+
+  s_state.max = (buf_len > s_state.max) ? buf_len : s_state.max;
+  s_state.min = (buf_len < s_state.min) ? buf_len : s_state.min;
  
   for (; y != y_e; ) {
     if (clock < MSG_LEN * 2) {
@@ -104,8 +118,6 @@ void OSC_PARAM(uint16_t index, uint16_t value) {
   case k_user_osc_param_id6:
   case k_user_osc_param_shape:
   case k_user_osc_param_shiftshape:
-    s_state.value = value;
-    break;
   default:
     break;
   }
