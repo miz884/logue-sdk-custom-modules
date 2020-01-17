@@ -29,23 +29,25 @@ void OSC_CYCLE(const user_osc_param_t* params,
                const uint32_t frames) {  
   // Handle the reset flag on NOTEON.
   if (state.flags & flag_noteon) {
-    state.flags = flags_clear;
+    state.flags &= ~(flag_noteon);
     state.phase = 0.f;
   }
 
   // Restore the last state.
   float phase = state.phase;
+  const float * const * wavetable = state.wavetable;
+  const uint16_t wavetable_index = state.wavetable_index;
 
-  // Calculate the current phase.
+  // Calculate the phase delta.
   const float w_delta = osc_w0f_for_note((params->pitch)>>8, params->pitch & 0xFF);
 
   // Prepare the result buffer.
   q31_t* __restrict y = (q31_t*) yn;
   const q31_t* y_e = y + frames;
 
-  for (; y != y_e; ) {
+  while (y != y_e) {
     // Main signal
-    float sig  = osc_wave_scanf(state.wavetable[state.wavetable_index], phase);
+    float sig  = osc_wave_scanf(wavetable[wavetable_index], phase);
     sig  = osc_softclipf(0.05f, sig);
     *(y++) = f32_to_q31(sig);
 
