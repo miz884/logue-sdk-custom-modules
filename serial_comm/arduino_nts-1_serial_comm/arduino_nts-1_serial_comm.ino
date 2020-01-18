@@ -84,17 +84,14 @@ void print_result() {
   const uint32_t result_ui = decode(0);
   // Serial.print(result_ui, BIN);
   // Serial.print("\t");
+  Serial.print(result_ui, HEX);
+  Serial.print("\t");
   Serial.print(result_ui, DEC);
   Serial.print("\t");
-  Serial.print(result_ui, HEX);
   // Convert it into signed int.
   const int32_t result_i = (int16_t) result_ui;
-  Serial.print("\t");
   Serial.print(result_i);
-  // Convert it into a floating point value.
-  const float result_f = param_val_to_f32(result_i);
   Serial.print("\t");
-  Serial.print(result_f);
   // End of line.
   Serial.println();
 }
