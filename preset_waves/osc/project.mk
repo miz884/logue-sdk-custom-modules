@@ -2,7 +2,7 @@
 # Project Customization
 # #############################################################################
 
-LOGUE_SDK_ROOT = ../../logue-sdk
+LOGUE_SDK_ROOT = ../../../logue-sdk
 
 PLATFORM_TYPE = nutekt-digital
 
