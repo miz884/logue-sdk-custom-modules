@@ -11,6 +11,7 @@
 
 typedef struct State {
   float phase;
+
   float param_time;
   float param_depth;
   uint16_t wavetable_index;
@@ -30,6 +31,7 @@ void MODFX_INIT(uint32_t platform, uint32_t api) {
 void MODFX_PROCESS(const float *main_xn, float *main_yn,
                    const float *sub_xn,  float *sub_yn,
                    uint32_t frames) {
+  // Prepare the result buffer.
   const float *mx = main_xn;
   float * __restrict my = main_yn;
   const float * my_e = my + 2 * frames;
@@ -37,11 +39,12 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn,
   const float *sx = sub_xn;
   float * __restrict sy = sub_yn;
 
+  // Restore the last state.
   float phase = state.phase;
   const float p_time = state.param_time;
   const float p_depth = state.param_depth;
 
-  for (; my != my_e; ) {
+  while (my != my_e) {
     float wave = get_wave_value(state.wavetable_index, phase);
     wave = (wave + 1.f) / 2.f * p_depth + (1.f - p_depth / 2.f);;
     
@@ -50,12 +53,13 @@ void MODFX_PROCESS(const float *main_xn, float *main_yn,
     *(sy++) = wave * *(sx++);
     *(sy++) = wave * *(sx++);
 
+    // Next step.
     phase += k_samplerate_recipf * (p_time * 9.f + 1.f);
+    phase -= (uint32_t) phase;
   }
 
+  // Store the state.
   state.phase = phase;
-  state.param_time = p_time;
-  state.param_depth = p_depth;
 }
 
 
