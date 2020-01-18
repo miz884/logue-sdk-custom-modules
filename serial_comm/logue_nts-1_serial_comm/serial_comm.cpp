@@ -1,5 +1,13 @@
-#include "osc_api.h"
-#include "userosc.h"
+#include "serial_comm.h"
+
+typedef struct SerialCommState {
+  uint16_t frames;
+  uint16_t clock;
+  uint16_t msg_bit_pos;
+  uint32_t msg;
+} SerialCommState;
+
+static SerialCommState sc_state;
 
 #define HIGH 0.99f
 #define ZERO 0.f
@@ -16,48 +24,11 @@ const float sync_signals[] = {
 
 const uint16_t sync_signals_len = sizeof(sync_signals) / sizeof(sync_signals[0]);
 
-typedef struct State {
-  uint16_t frames;
-  uint16_t clock;
-  uint16_t msg_bit_pos;
-  uint32_t msg;
-
-  uint16_t value;
-
-  const float * const * p;
-  uint32_t count;
-  uint32_t w_index;
-  uint32_t v_index;
-} State;
-
-static State s_state;
-
-void init_message() {
-  s_state.p = wavesF;
-  s_state.value = 0;
-  s_state.count = 0;
-  s_state.w_index = 0;
-  s_state.v_index = 0;
-}
-
-uint32_t get_next_message() {
-  ++s_state.count;
-  if (s_state.count < 10) return 0UL;
-  if (s_state.w_index >= (sizeof(s_state.p) / sizeof(s_state.p[0]))) return 0UL;
-  uint32_t result = (uint32_t) ((s_state.p[s_state.w_index][s_state.v_index++] + 1.f) * 10000.f);
-  if (s_state.v_index >= k_waves_size) {
-    s_state.count =0;
-    s_state.v_index = 0;
-    s_state.w_index++;
-  }
-  return result;
-}
-
 void OSC_INIT(uint32_t platform, uint32_t api) {
-  s_state.frames = 0;
-  s_state.clock = 0;
-  s_state.msg_bit_pos = 0;
-  s_state.msg = 0;
+  sc_state.frames = 0;
+  sc_state.clock = 0;
+  sc_state.msg_bit_pos = 0;
+  sc_state.msg = 0;
 
   init_message();
 }
@@ -65,16 +36,18 @@ void OSC_INIT(uint32_t platform, uint32_t api) {
 void OSC_CYCLE(const user_osc_param_t *params,
                int32_t *yn,
                const uint32_t buf_len) {  
+  update_message(params, yn, buf_len);
+
   // Prepare the result buffer.
   q31_t * __restrict y = (q31_t *) yn;
   const q31_t * y_e = y + buf_len;
 
   // Restore the last state.
-  uint16_t frames = s_state.frames;
-  uint16_t clock = s_state.clock;
-  uint16_t msg_bit_pos = s_state.msg_bit_pos;
-  uint32_t msg = s_state.msg;
- 
+  uint16_t frames = sc_state.frames;
+  uint16_t clock = sc_state.clock;
+  uint16_t msg_bit_pos = sc_state.msg_bit_pos;
+  uint32_t msg = sc_state.msg;
+
   for (; y != y_e; ) {
     if (clock < MSG_LEN * 2) {
       // Send the msg.
@@ -104,35 +77,9 @@ void OSC_CYCLE(const user_osc_param_t *params,
   }
 
   // Store the state.
-  s_state.frames = frames;
-  s_state.clock = clock;
-  s_state.msg_bit_pos = msg_bit_pos;
-  s_state.msg = msg;
-}
-
-void OSC_NOTEON(const user_osc_param_t * const params) {
-  init_message();
-}
-
-void OSC_NOTEOFF(const user_osc_param_t * const params) {
-  (void) params;
-}
-
-void OSC_PARAM(uint16_t index, uint16_t value) {
-  
-  switch (index) {
-  case k_user_osc_param_id1:
-  case k_user_osc_param_id2:
-  case k_user_osc_param_id3:
-  case k_user_osc_param_id4:
-  case k_user_osc_param_id5:
-  case k_user_osc_param_id6:
-  case k_user_osc_param_shape:
-  case k_user_osc_param_shiftshape:
-    s_state.value = value;
-    break;
-  default:
-    break;
-  }
+  sc_state.frames = frames;
+  sc_state.clock = clock;
+  sc_state.msg_bit_pos = msg_bit_pos;
+  sc_state.msg = msg;
 }
 

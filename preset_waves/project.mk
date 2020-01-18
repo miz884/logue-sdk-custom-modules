@@ -2,17 +2,17 @@
 # Project Customization
 # #############################################################################
 
-LOGUE_SDK_ROOT = ../../../logue-sdk
+LOGUE_SDK_ROOT = ../../logue-sdk
 
 PLATFORM_TYPE = nutekt-digital
 
 MODULE_TYPE = osc
 
-PROJECT = serial_comm
+PROJECT = preset_waves
 
 UCSRC = 
 
-UCXXSRC = serial_comm_preset_waves.cpp serial_comm.cpp
+UCXXSRC = preset_waves.cpp
 
 UINCDIR = 
 
@@ -20,4 +20,4 @@ UDEFS =
 
 ULIB = 
 
-ULIBDIR =
+ULIBDIR = 
