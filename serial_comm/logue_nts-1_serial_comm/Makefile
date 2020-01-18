@@ -16,7 +16,11 @@ endif
 # Include project specific definition
 # #############################################################################
 
-include ./project.mk
+ifndef PROJECT_MK
+  PROJECT_MK = ./project.mk
+endif
+
+include $(PROJECT_MK)
 
 PLATFORMDIR = $(LOGUE_SDK_ROOT)/platform/$(PLATFORM_TYPE)
 PROJECTDIR = $(PLATFORMDIR)/$(MODULE_TYPE)
