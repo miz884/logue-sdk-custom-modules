@@ -12,7 +12,7 @@ PROJECT = terrain_modfx
 
 UCSRC = 
 
-UCXXSRC = terrain_modfx.cpp ../common/wavetables.cpp
+UCXXSRC = terrain_modfx.cpp ../common/mt.cpp
 
 UINCDIR =
 

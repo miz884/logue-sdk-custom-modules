@@ -12,7 +12,7 @@ PROJECT = terrain_wave
 
 UCSRC = 
 
-UCXXSRC = terrain_wave.cpp ../common/wavetables.cpp
+UCXXSRC = terrain_wave.cpp ../common/mt.cpp
 
 UINCDIR = 
 

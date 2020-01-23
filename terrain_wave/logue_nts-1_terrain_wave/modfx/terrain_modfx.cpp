@@ -1,4 +1,5 @@
 #include "usermodfx.h"
+#include "../common/mt.h"
 #include "../common/wavetables.h"
 
 #ifndef k_samplerate

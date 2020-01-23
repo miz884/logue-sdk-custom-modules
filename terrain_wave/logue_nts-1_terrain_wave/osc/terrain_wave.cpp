@@ -1,4 +1,5 @@
 #include "userosc.h"
+#include "../common/mt.h"
 #include "../common/wavetables.h"
 
 typedef struct State {

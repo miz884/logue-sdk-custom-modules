@@ -1,11 +1,12 @@
+#include "mt.h"
 #include "wavetables.h"
 
-uint16_t wavetable_len[2];
+uint16_t wavetable_len[NUM_WAVETABLES];
 
 #ifdef SIMPLE_WAVETABLES
-uint16_t* wavetables[2];
+uint16_t* wavetables[NUM_WAVETABLES];
 #else
-float* wavetables[2];
+float* wavetables[NUM_WAVETABLES];
 #endif
 
 void init_wavetables() {
@@ -20,7 +21,6 @@ float get_wave_value(const uint16_t w_index, const float phase) {
   const uint16_t index = (uint16_t) ((float) wavetable_len[w_index] * p);
 #ifdef SIMPLE_WAVETABLES
   return ((float) wavetables[w_index][index] / 0xFFFF * 2.f - 1.0);
-
 #else
   return wavetables[w_index][index];
 #endif
