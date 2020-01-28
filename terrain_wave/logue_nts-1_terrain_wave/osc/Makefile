@@ -16,7 +16,11 @@ endif
 # Include project specific definition
 # #############################################################################
 
-include ./project.mk
+ifndef PROJECT_MK
+  PROJECT_MK = ./project.mk
+endif
+
+include $(PROJECT_MK)
 
 PLATFORMDIR = $(LOGUE_SDK_ROOT)/platform/$(PLATFORM_TYPE)
 PROJECTDIR = $(PLATFORMDIR)/$(MODULE_TYPE)
@@ -93,7 +97,9 @@ TOPT = -mthumb -mno-thumb-interwork -DTHUMB_NO_INTERWORKING -DTHUMB_PRESENT
 
 PKGDIR = $(PROJECT)
 PKGARCH = $(PROJECT).ntkdigunit
-MANIFEST = manifest.json
+ifndef MANIFEST
+  MANIFEST = manifest.json
+endif
 PAYLOAD = payload.bin
 BUILDDIR = $(PROJECTDIR)/build
 OBJDIR = $(BUILDDIR)/obj
@@ -226,7 +232,7 @@ clean:
 package:
 	@echo Packaging to ./$(PKGARCH)
 	@mkdir -p $(PKGDIR)
-	@cp -a $(MANIFEST) $(PKGDIR)/
+	@cp -a $(MANIFEST) $(PKGDIR)/manifest.json
 	@cp -a $(BUILDDIR)/$(PROJECT).bin $(PKGDIR)/$(PAYLOAD)
 	@$(ZIP) $(ZIP_ARGS) $(PROJECT).zip $(PKGDIR)
 	@mv $(PROJECT).zip $(PKGARCH)

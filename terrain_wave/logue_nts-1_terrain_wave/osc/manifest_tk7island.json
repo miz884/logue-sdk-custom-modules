@@ -1,0 +1,18 @@
+{
+    "header" : 
+    {
+        "platform" : "nutekt-digital",
+        "module" : "osc",
+        "api" : "1.1-0",
+        "dev_id" : 0,
+        "prg_id" : 0,
+        "version" : "0.2-0",
+        "name" : "tk7island",
+        "num_param" : 3,
+        "params" : [
+          ["island", "0", "8", ""],
+          ["EG Enable", "0", "1", ""],
+          ["EG Scale", "1", "10", ""]
+        ]
+    }
+}
