@@ -6,9 +6,6 @@ typedef struct State {
   float phase;
   uint8_t flags;
   uint8_t wavetable_index;
-  uint32_t step_count;
-  uint8_t eg_enabled;
-  float eg_scale;
 } State;
 
 static State state;
@@ -23,9 +20,6 @@ void OSC_INIT(uint32_t platform, uint32_t api) {
   state.phase = 0.f;
   state.flags = flags_clear;
   state.wavetable_index = 0;
-  state.step_count = 0;
-  state.eg_enabled = 0;
-  state.eg_scale = 1.0;
 
   init_wavetables();
 }
@@ -35,16 +29,12 @@ void OSC_CYCLE(const user_osc_param_t* params,
                const uint32_t frames) {  
   // Handle the reset flag on NOTEON.
   if (state.flags & flag_noteon) {
-    state.flags = flags_clear;
+    state.flags &= ~(flag_noteon);
     state.phase = 0.f;
-    state.step_count = 0;
   }
 
   // Restore the last state.
   float phase = state.phase;
-  uint32_t steps = state.step_count;
-  uint8_t eg_enabled = state.eg_enabled;
-  float eg_scale = state.eg_scale;
 
   // Calculate the current phase.
   const float w_delta = osc_w0f_for_note((params->pitch)>>8, params->pitch & 0xFF);
@@ -56,19 +46,19 @@ void OSC_CYCLE(const user_osc_param_t* params,
   for (; y != y_e; ) {
 
     // Main signal
-    const float drive = (get_wave_value(state.wavetable_index, (float) steps / k_samplerate * eg_scale) + 1.0) / 2.0;
-    const float sig  = osc_softclipf(0.05f, (eg_enabled == 1 ? drive : 1.0) * get_wave_value(state.wavetable_index, phase));
-    *(y++) = f32_to_q31(sig);
+    const float p = ((phase < .5f) ? phase : 1.f - phase) * 2.f;
+    float sig = get_wave_value(state.wavetable_index, p);
+    sig = (sig + 1.f) / 2.f; // 0.0 <= sig <= 1.0
+    sig *= (phase < .5f) ? 1.f : -1.f; // -1.0 <= sig <= 1.0
+    *(y++) = f32_to_q31(osc_softclipf(0.05f, sig));
 
     // Next step.
     phase += w_delta;
     phase -= (uint32_t) phase; // to keep phase within 0.0-1.0.
-    if (steps < k_samplerate / eg_scale) ++steps;
   }
 
   // Store the state.
   state.phase = phase;
-  state.step_count = steps;
 }
 
 void OSC_NOTEON(const user_osc_param_t * const params) {
@@ -85,11 +75,7 @@ void OSC_PARAM(uint16_t index, uint16_t value) {
     state.wavetable_index = value;
     break;
   case k_user_osc_param_id2:
-    state.eg_enabled = value;
-    break;
   case k_user_osc_param_id3:
-    state.eg_scale = (float) value;
-    break;
   case k_user_osc_param_id4:
   case k_user_osc_param_id5:
   case k_user_osc_param_id6:

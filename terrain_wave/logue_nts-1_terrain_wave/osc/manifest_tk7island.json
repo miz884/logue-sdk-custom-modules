@@ -8,11 +8,9 @@
         "prg_id" : 0,
         "version" : "0.2-0",
         "name" : "tk7island",
-        "num_param" : 3,
+        "num_param" : 1,
         "params" : [
-          ["island", "0", "8", ""],
-          ["EG Enable", "0", "1", ""],
-          ["EG Scale", "1", "10", ""]
+          ["island", "0", "8", ""]
         ]
     }
 }
