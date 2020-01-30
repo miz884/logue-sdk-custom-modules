@@ -14,8 +14,12 @@ void init_wavetables() {
 
 float get_wave_value(const uint16_t w_index, const float phase) {
   const float p = phase - (uint16_t) phase;
-  const uint16_t index = (uint16_t) ((float) wavetable_len[w_index] * p);
-  return ((float) wavetables[w_index][index] / 0xFFFF * 2.f - 1.0);
+  const uint16_t s_index = (uint16_t) ((float) wavetable_len[w_index] * p);
+  const uint16_t e_index = (s_index + 1) % wavetable_len[w_index];
+  const float r = wavetable_len[w_index] * p - s_index;
+  const uint16_t s_val = wavetables[w_index][s_index];
+  const uint16_t e_val = wavetables[w_index][e_index];
+  return ((float) ((1.f - r) * s_val + r * e_val)  / (float) 0xFFFF * 2.f - 1.0);
 }
 
 uint16_t _wavetables[NUM_WAVETABLES][128] = {{
