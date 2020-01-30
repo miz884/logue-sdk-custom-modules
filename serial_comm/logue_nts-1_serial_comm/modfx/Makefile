@@ -17,8 +17,8 @@ endif
 # #############################################################################
 
 ifndef PROJECT_MK
-    PROJECT_MK = ./project.mk
-  endif
+  PROJECT_MK = ./project.mk
+endif
 
 include $(PROJECT_MK)
 

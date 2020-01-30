@@ -48,7 +48,7 @@ void OSC_CYCLE(const user_osc_param_t *params,
   uint16_t msg_bit_pos = sc_state.msg_bit_pos;
   Message msg = sc_state.msg;
 
-  for (; y != y_e; ) {
+  while (y != y_e) {
     if (clock < MSG_LEN * 2) {
       // Send the msg.
       int bit = ((msg.ui32 & (1 << msg_bit_pos)) > 0) ? 1 : 0;
