@@ -11,13 +11,18 @@
 #define k_samplerate_recipf (2.08333333333333e-005f)
 #endif
 
+typedef union message {
+  float f;
+  int32_t i32;
+  uint32_t ui32;
+} Message;
+
 void init_message();
 
 void update_message(const float *main_xn, float *main_yn,
                     const float *sub_xn,  float *sub_yn,
                     uint32_t frames);
-                    
 
-uint32_t get_next_message();
+Message get_next_message();
 
 #endif
