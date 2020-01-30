@@ -21,5 +21,5 @@ Message get_next_message() {
 }
 
 void OSC_PARAM(uint16_t index, uint16_t value) {
-  state.message.ui16 = value;
+  state.message.ui32 = value;
 }
