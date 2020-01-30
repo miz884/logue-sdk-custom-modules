@@ -4,6 +4,7 @@ typedef struct State {
   uint32_t count;
   uint16_t min;
   uint16_t max;
+  Message msg;
 } State;
 
 static State state;
@@ -21,14 +22,15 @@ void update_message(const user_osc_param_t *params,
   state.max = (buf_len > state.max) ? buf_len : state.max;
 }
 
-uint32_t get_next_message() {
+Message get_next_message() {
   ++state.count;
   state.count %= 2;
   if (state.count == 0) {
-    return state.min;
+    state.msg.ui32 = state.min;
   } else {
-    return state.max;
+    state.msg.ui32 = state.max;
   }
+  return state.msg;
 }
 
 void OSC_NOTEON(const user_osc_param_t * const params) {

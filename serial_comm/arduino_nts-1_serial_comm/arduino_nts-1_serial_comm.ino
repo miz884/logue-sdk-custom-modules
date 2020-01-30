@@ -14,6 +14,13 @@
 #define DOUBLE_CLOCKS_MICROS (MICROS_PER_CLOCK * 2.f * ACCEPTABLE_ERROR)
 #define SYNC_SIGNAL_MICROS (MICROS_PER_CLOCK * (float) SYNC_SIGNAL_CLOCKS * ACCEPTABLE_ERROR)
 
+typedef union Message {
+  float f;
+  int32_t i32;
+  uint32_t ui32;
+  int16_t i16;
+} Message;
+
 typedef struct State {
   uint16_t prev_sig = 0;
   unsigned long prev_clock_micros = 0;
@@ -59,8 +66,9 @@ void setup() {
 /*
  * Decode a Manchester code.
  */
-uint32_t decode(const int offset) {
-  uint32_t output = 0;
+Message decode(const int offset) {
+  Message output;
+  output.ui32 = 0L;
   for (int i = offset; i < state.result_current_pos; i += 2) {
     const uint16_t b0 = result_get(i);
     const uint16_t b1 = result_get(i + 1);
@@ -71,26 +79,25 @@ uint32_t decode(const int offset) {
         return decode(1);
       } else {
         // A shift didn't work. Error.
-        return 0xFFFFFFFF;
+        output.ui32 = 0xFFFFFFFF;
+        return output;
       }
     }
-    output <<= 1;
-    output |= b0;
+    output.ui32 <<= 1;
+    output.ui32 |= b0;
   }
   return output;
 }
 
 void print_result() {
-  const uint32_t result_ui = decode(0);
-  // Serial.print(result_ui, BIN);
-  // Serial.print("\t");
-  Serial.print(result_ui, HEX);
+  const Message result = decode(0);
+  Serial.print(result.ui32, HEX);
   Serial.print("\t");
-  Serial.print(result_ui, DEC);
+  Serial.print(result.ui32, DEC);
   Serial.print("\t");
-  // Convert it into signed int.
-  const int32_t result_i = (int16_t) result_ui;
-  Serial.print(result_i);
+  Serial.print(result.i16, DEC);
+  Serial.print("\t");
+  Serial.print(result.f, DEC);
   Serial.print("\t");
   // End of line.
   Serial.println();

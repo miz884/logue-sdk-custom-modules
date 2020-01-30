@@ -24,12 +24,18 @@ void update_message(const user_osc_param_t *params,
   (void) params;
 }
 
-uint32_t get_next_message() {
+Message get_next_message() {
   ++state.count;
-  if (state.count < 10) return 0UL;
-  // if (state.w_index >= (sizeof(state.p) / sizeof(state.p[0]))) return 0UL;
-  if (state.w_index >= state.max_w_index) return 0UL;
-  uint32_t result = (uint32_t) ((state.p[state.w_index][state.v_index++] + 1.f) * 10000.f);
+  Message result;
+  if (state.count < 10) {
+    result.ui32 = 0L;
+    return result;
+  }
+  if (state.w_index >= state.max_w_index) {
+    result.ui32 = 0L;
+    return result;
+  }
+  result.f = state.p[state.w_index][state.v_index++];
   if (state.v_index >= k_waves_size) {
     state.count =0;
     state.v_index = 0;

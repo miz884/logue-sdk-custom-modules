@@ -3,7 +3,7 @@
 #define LENGTH (48000 / 64)
 
 typedef struct State {
-  uint32_t values[LENGTH];
+  Message values[LENGTH];
   uint16_t w_index;
   uint16_t r_index;
   uint16_t count;
@@ -20,16 +20,17 @@ void update_message(const user_osc_param_t *params,
                    int32_t *yn,
                    const uint32_t buf_len) {  
   if (state.w_index >= LENGTH) return;
-  float v = q31_to_f32(params->shape_lfo);
-  uint32_t ui = (uint32_t) ((v) * 10000.f);
-  state.values[state.w_index++] = ui;
-  // state.values[state.w_index++] = params->reserved0[2];
+  state.values[state.w_index++].f = q31_to_f32(params->shape_lfo);
 }
 
-uint32_t get_next_message() {
-  if (state.r_index == 0 && state.count++ < 10) return 0L;
+Message get_next_message() {
+  Message v;
+  if (state.r_index == 0 && state.count++ < 10) {
+    v.ui32 = 0L;
+    return v;
+  }
   state.count = 0;
-  uint32_t v = state.values[state.r_index++];
+  v = state.values[state.r_index++];
   state.r_index %= LENGTH;
   return v;
 }

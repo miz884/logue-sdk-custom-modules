@@ -1,13 +1,13 @@
 #include "serial_comm.h"
 
 typedef struct State {
-  uint32_t value;
+  Message message;
 } State;
 
 static State state;
 
 void init_message() {
-  state.value = 0;
+  state.message.ui32 = 0L;
 }
 
 void update_message(const user_osc_param_t *params,
@@ -16,10 +16,10 @@ void update_message(const user_osc_param_t *params,
   (void) params;
 }
 
-uint32_t get_next_message() {
-  return state.value;
+Message get_next_message() {
+  return state.message;
 }
 
 void OSC_PARAM(uint16_t index, uint16_t value) {
-  state.value = value;
+  state.message.ui16 = value;
 }

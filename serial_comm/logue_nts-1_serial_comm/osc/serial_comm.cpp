@@ -4,7 +4,7 @@ typedef struct SerialCommState {
   uint16_t frames;
   uint16_t clock;
   uint16_t msg_bit_pos;
-  uint32_t msg;
+  Message msg;
 } SerialCommState;
 
 static SerialCommState sc_state;
@@ -28,7 +28,7 @@ void OSC_INIT(uint32_t platform, uint32_t api) {
   sc_state.frames = 0;
   sc_state.clock = 0;
   sc_state.msg_bit_pos = 0;
-  sc_state.msg = 0;
+  sc_state.msg.ui32 = 0;
 
   init_message();
 }
@@ -46,12 +46,12 @@ void OSC_CYCLE(const user_osc_param_t *params,
   uint16_t frames = sc_state.frames;
   uint16_t clock = sc_state.clock;
   uint16_t msg_bit_pos = sc_state.msg_bit_pos;
-  uint32_t msg = sc_state.msg;
+  Message msg = sc_state.msg;
 
   for (; y != y_e; ) {
     if (clock < MSG_LEN * 2) {
       // Send the msg.
-      int bit = ((msg & (1 << msg_bit_pos)) > 0) ? 1 : 0;
+      int bit = ((msg.ui32 & (1 << msg_bit_pos)) > 0) ? 1 : 0;
       *(y++) = f32_to_q31(((clock % 2) == bit) ? HIGH : LOW);
     } else {
       // Send the sync signal in last 16 clocks.

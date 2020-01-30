@@ -4,7 +4,7 @@
 #define LENGTH 128
 
 typedef struct State {
-  uint32_t values[LENGTH];
+  Message values[LENGTH];
   uint16_t index;
 } State;
 
@@ -23,8 +23,7 @@ void init_message() {
     // const float v = si_fabsf(phif);
     // const float v = (si_fabsf(phif) - 1.f);
     // const float v = phif * (si_fabsf(phif) - 1.f);
-    const float v = lfo.sine_bi();
-    state.values[i] = (uint32_t) ((v + 1.f) * 10000.f);
+    state.values[i].f = lfo.sine_bi();
     phi0 += w0;
     lfo.cycle();
   }
@@ -36,8 +35,8 @@ void update_message(const user_osc_param_t *params,
   (void) params;
 }
 
-uint32_t get_next_message() {
-  uint32_t v = state.values[state.index++];
+Message get_next_message() {
+  Message v = state.values[state.index++];
   state.index %= LENGTH;
   return v;
 }
